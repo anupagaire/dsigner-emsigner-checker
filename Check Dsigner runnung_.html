@@ -1,0 +1,228 @@
+<html>
+  <head>
+    <title>WebSocket Test - emsigner & dsigner</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .status { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+      .service-status { display: inline-block; margin-right: 20px; padding: 5px 10px; border-radius: 3px; font-weight: bold; }
+      .connected { background: #d4edda; color: #155724; }
+      .disconnected { background: #f8d7da; color: #721c24; }
+    </style>
+  </head>
+  <body>
+    
+    <h2>WebSocket Test - emsigner & dsigner</h2>
+    
+    <div class="status">
+      <div class="service-status disconnected" id="emsignerStatus">emsigner: Disconnected</div>
+      <div class="service-status disconnected" id="dsignerStatus">dsigner: Disconnected</div>
+    </div>
+
+    <table>
+      <tr>
+        <td>InputData :</td>
+        <td><textarea id="name" cols=100 rows=10 ></textarea></td>
+      </tr>
+      
+      <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+
+      <tr>
+        <td>
+          <input type="button" value="Sign using emsigner" onClick='call("emsigner","signData",document.getElementById("name").value)'>
+          <input type="button" value="Sign using dsigner" onClick='call("dsigner","signData",document.getElementById("name").value)'>
+        </td>
+      </tr>
+
+      <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+      </tr>
+      <tr>
+        <td>Output signedData :</td>
+        <td><textarea id="signData" cols=100 rows=20 readonly = "readonly"></textarea></td>
+      </tr>
+    </table>
+    
+  </body>
+  
+  <script type="text/javascript">
+  
+  var PortList = [8080, 1645, 1812, 2083, 2948];
+  
+  var emsignerConnection = null;
+  var dsignerConnection = null;
+  
+  var errorCount = 0;
+  var index = 0;
+
+  function SetConnectionPort(port)
+  {
+    index++;
+    if ("WebSocket" in window)
+    {
+      setTimeout(function()
+      {
+        var ws = new WebSocket("wss://127.0.0.1:"+port);
+        
+        ws.onopen = function()
+        {
+          try
+          {
+            console.log('Connection Opened on port: ' + port);
+          }
+          catch(err){}
+        };
+        
+        ws.onmessage = function (evt) 
+        {
+          try
+          {
+            var data = evt.data;
+            console.log('Message from port ' + port + ': ' + data);
+            
+            // Auto-identify based on response content
+            var service = identifyService(data);
+            
+            console.log('Port ' + port + ' identified as: ' + service);
+            
+            if(service === 'emsigner' && emsignerConnection == null)
+            {
+              emsignerConnection = ws;
+              updateStatus('emsigner', true, port);
+              console.log('✓ emsigner connected on port: ' + port);
+              alert("emsigner: first " + data);
+            }
+            else if(service === 'dsigner' && dsignerConnection == null)
+            {
+              dsignerConnection = ws;
+              updateStatus('dsigner', true, port);
+              console.log('✓ dsigner connected on port: ' + port);
+              alert("dsigner: first " + data);
+            }
+          }
+          catch(err){
+            console.error('Error: ' + err);
+            alert('error');
+          }
+        };
+        
+        ws.onerror = function(err)
+        {
+          errorCount++;
+          console.log('Port ' + port + ' error');
+          if(index == 5 && errorCount == 5)
+          {
+            alert("Kindly check the server connection.");
+          }
+        };
+        
+      }, 1);
+    }
+  }
+
+  // Auto-identify service based on response content
+  function identifyService(responseData)
+  {
+    var data = responseData.toLowerCase();
+    
+if(data.indexOf('version') > -1)
+{
+  return 'emsigner';  
+}
+
+if(data.indexOf('connection established') > -1)
+{
+  return 'dsigner';  
+}
+    
+    // If contains "status = success", likely dsigner
+    if(data.indexOf('status = success') > -1)
+    {
+      return 'dsigner';
+    }
+    
+    // Default: if JSON with status:connected, it's emsigner
+    try
+    {
+      var json = JSON.parse(responseData);
+      if(json.status === 'connected')
+      {
+        return 'emsigner';
+      }
+    }
+    catch(e) {}
+    
+    return null;
+  }
+
+  // Update status display
+  function updateStatus(service, connected, port)
+  {
+    var statusId = service + 'Status';
+    var statusElement = document.getElementById(statusId);
+    
+    if(connected)
+    {
+      statusElement.className = 'service-status connected';
+      statusElement.textContent = service.toUpperCase() + ': Connected (Port ' + port + ')';
+    }
+    else
+    {
+      statusElement.className = 'service-status disconnected';
+      statusElement.textContent = service.toUpperCase() + ': Disconnected';
+    }
+  }
+
+  // Start auto-detecting on all ports
+  
+  for(var i = 0; i < PortList.length; i++)
+  {
+    SetConnectionPort(PortList[i]);
+  }
+
+  // Call function that handles signing
+  function call(service, txf1, msg)
+  {
+    var connection;
+    
+    if(service === 'emsigner')
+    {
+      connection = emsignerConnection;
+    }
+    else if(service === 'dsigner')
+    {
+      connection = dsignerConnection;
+    }
+
+    if(connection == null)
+    {
+      alert('Please check the ' + service.toUpperCase() + ' server connection');
+      return;
+    }
+
+    console.log('Sending to ' + service + ': ');
+    connection.send(msg);
+    
+    connection.onerror = function (error) 
+    {
+      alert('Please check the server connection: ' + error);
+      document.getElementById("signData").value = error;
+    };
+    
+    connection.onmessage = function (e) 
+    {
+      if(e.data.indexOf("subProtocol") == -1)
+      {
+        console.log('Response from ' + service + ': ' );
+        document.getElementById(txf1).value = e.data;
+      }
+    };
+  }
+ 
+
+</script>
+  
+</html>
