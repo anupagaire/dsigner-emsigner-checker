@@ -1,29 +1,80 @@
+<!DOCTYPE html>
 <html>
-  <head>
-    <title>WebSocket Test - emsigner & dsigner</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 20px; }
-      .status { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
-      .service-status { display: inline-block; margin-right: 20px; padding: 5px 10px; border-radius: 3px; font-weight: bold; }
-      .connected { background: #d4edda; color: #155724; }
-      .disconnected { background: #f8d7da; color: #721c24; }
-    </style>
-  </head>
-  <body>
-    
-    <h2>WebSocket Test - emsigner & dsigner</h2>
-    
-    <div class="status">
-      <div class="service-status disconnected" id="emsignerStatus">emsigner: Disconnected</div>
-      <div class="service-status disconnected" id="dsignerStatus">dsigner: Disconnected</div>
+<head>
+<meta charset="utf-8">
+<title>WebSocket Test - emsigner & dsigner</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  .status { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+  .service-status { display: inline-block; margin-right: 20px; padding: 5px 10px; border-radius: 3px; font-weight: bold; }
+  .connected { background: #d4edda; color: #155724; }
+  .disconnected { background: #f8d7da; color: #721c24; }
+
+  .layout { display: flex; gap: 20px; align-items: flex-start; }
+  .samples { width: 430px; flex-shrink: 0; }
+  .main { flex: 1; }
+
+  .box { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 15px; }
+  .box h3 { margin: 0 0 6px 0; font-size: 15px; }
+  .box textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 12px; background: #fff; }
+  .box button { margin-top: 4px; padding: 5px 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h2>WebSocket Test - emsigner & dsigner</h2>
+
+<div class="status">
+  <div class="service-status disconnected" id="emsignerStatus">emsigner: Disconnected</div>
+  <div class="service-status disconnected" id="dsignerStatus">dsigner: Disconnected</div>
+</div>
+
+<div class="layout">
+
+  <!-- ============ LEFT: sample inputs (copy & paste into InputData) ============ -->
+  <div class="samples">
+
+    <div class="box">
+      <h3>Sample input for emsigner</h3>
+      <textarea id="sampleEm" rows="15" readonly>emsigneraction=pdfsign
+tbs=E:/emsignertest/lasttest/correct/encrption2.pdf
+or
+tbs=http://s28.q4cdn.com/392171258/files/doc_downloads/test.pdf
+outputpath=E:/emsignertest/output/encrption2.pdf
+signaction=1
+certtype=ALL
+expirycheck=true
+issuername=
+signtype=detached
+coordinate=400,100,500,150
+pageno=2
+reason=test
+location=bangalore</textarea>
+      <button onclick="copyText('sampleEm')">Copy</button>
     </div>
 
+    <div class="box">
+      <h3>Sample input for dsigner</h3>
+      <textarea id="sampleDs" rows="15" readonly>action=signPdf
+input={0,"JVBERi0xLjcKJcK1wrYKCjEgMCBvYmoKPDwvVHlwZS9DYXRhbG9nL1BhZ2VzIDIgMCBSPj4KZW5kb2JqCgoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMS9LaWRzWzQgMCBSXT4+CmVuZG9iagoKMyAwIG9iago8PC9Gb250PDwvaGVsdiA1IDAgUj4+Pj4KZW5kb2JqCgo0IDAgb2JqCjw8L1R5cGUvUGFnZS9NZWRpYUJveFswIDAgNTk1IDg0Ml0vUm90YXRlIDAvUmVzb3VyY2VzIDMgMCBSL1BhcmVudCAyIDAgUi9Db250ZW50c1s2IDAgUl0+PgplbmRvYmoKCjUgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhL0VuY29kaW5nL1dpbkFuc2lFbmNvZGluZz4+CmVuZG9iagoKNiAwIG9iago8PC9MZW5ndGggOTUvRmlsdGVyL0ZsYXRlRGVjb2RlPj4Kc3RyZWFtCnjaFYoxCoAwDAD3vCI/MC1poiAOgoubkE2crMFBBxffb+SWgzt4YDRISEFCzahKaDc053G9mBKa49pzK0X2wDMVFdcczplEwlxqWI2j/kW7eIiZZdhshslggQ+qehejCmVuZHN0cmVhbQplbmRvYmoKCnhyZWYKMCA3CjAwMDAwMDAwMDAgMDAwMDEgZiAKMDAwMDAwMDAxNiAwMDAwMCBuIAowMDAwMDAwMDYyIDAwMDAwIG4gCjAwMDAwMDAxMTQgMDAwMDAgbiAKMDAwMDAwMDE1NSAwMDAwMCBuIAowMDAwMDAwMjYyIDAwMDAwIG4gCjAwMDAwMDAzNTEgMDAwMDAgbiAKCnRyYWlsZXIKPDwvU2l6ZSA3L1Jvb3QgMSAwIFIvSURbPEMzODlDMkI2QzI5MjQyNjRDMzgwQzNBOUMzQjgwNkMzPjxCRkQ2MzAyNkM1RTc4OTI3NjYwMzMyOTZDNjg3NUE3OD5dPj4Kc3RhcnR4cmVmCjUxNAolJUVPRgo="}
+signPage=all
+coordinates=400,100,600,200
+location=Kathmandu
+textStamp=0
+output={"D:/devs.pdf"}</textarea>
+      <button onclick="copyText('sampleDs')">Copy</button>
+    </div>
+
+  </div>
+
+  <!-- ============ RIGHT: original UI (unchanged) ============ -->
+  <div class="main">
     <table>
       <tr>
         <td>InputData :</td>
         <td><textarea id="name" cols=100 rows=10 ></textarea></td>
       </tr>
-      
+
       <tr>
         <td>&nbsp;</td>
         <td>&nbsp;</td>
@@ -45,18 +96,28 @@
         <td><textarea id="signData" cols=100 rows=20 readonly = "readonly"></textarea></td>
       </tr>
     </table>
-    
-  </body>
-  
-  <script type="text/javascript">
-  
+  </div>
+
+</div>
+
+<script type="text/javascript">
+
   var PortList = [8080, 1645, 1812, 2083, 2948];
-  
+
   var emsignerConnection = null;
   var dsignerConnection = null;
-  
+
   var errorCount = 0;
   var index = 0;
+
+  // Copy sample text to clipboard
+  function copyText(id)
+  {
+    var el = document.getElementById(id);
+    el.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    if (navigator.clipboard) { navigator.clipboard.writeText(el.value); }
+  }
 
   function SetConnectionPort(port)
   {
@@ -66,7 +127,7 @@
       setTimeout(function()
       {
         var ws = new WebSocket("wss://127.0.0.1:"+port);
-        
+
         ws.onopen = function()
         {
           try
@@ -75,19 +136,19 @@
           }
           catch(err){}
         };
-        
-        ws.onmessage = function (evt) 
+
+        ws.onmessage = function (evt)
         {
           try
           {
             var data = evt.data;
             console.log('Message from port ' + port + ': ' + data);
-            
+
             // Auto-identify based on response content
             var service = identifyService(data);
-            
+
             console.log('Port ' + port + ' identified as: ' + service);
-            
+
             if(service === 'emsigner' && emsignerConnection == null)
             {
               emsignerConnection = ws;
@@ -108,7 +169,7 @@
             alert('error');
           }
         };
-        
+
         ws.onerror = function(err)
         {
           errorCount++;
@@ -118,7 +179,7 @@
             alert("Kindly check the server connection.");
           }
         };
-        
+
       }, 1);
     }
   }
@@ -127,23 +188,23 @@
   function identifyService(responseData)
   {
     var data = responseData.toLowerCase();
-    
-if(data.indexOf('version') > -1)
-{
-  return 'emsigner';  
-}
 
-if(data.indexOf('connection established') > -1)
-{
-  return 'dsigner';  
-}
-    
+    if(data.indexOf('version') > -1)
+    {
+      return 'emsigner';
+    }
+
+    if(data.indexOf('connection established') > -1)
+    {
+      return 'dsigner';
+    }
+
     // If contains "status = success", likely dsigner
     if(data.indexOf('status = success') > -1)
     {
       return 'dsigner';
     }
-    
+
     // Default: if JSON with status:connected, it's emsigner
     try
     {
@@ -154,7 +215,7 @@ if(data.indexOf('connection established') > -1)
       }
     }
     catch(e) {}
-    
+
     return null;
   }
 
@@ -163,7 +224,7 @@ if(data.indexOf('connection established') > -1)
   {
     var statusId = service + 'Status';
     var statusElement = document.getElementById(statusId);
-    
+
     if(connected)
     {
       statusElement.className = 'service-status connected';
@@ -177,7 +238,6 @@ if(data.indexOf('connection established') > -1)
   }
 
   // Start auto-detecting on all ports
-  
   for(var i = 0; i < PortList.length; i++)
   {
     SetConnectionPort(PortList[i]);
@@ -187,7 +247,7 @@ if(data.indexOf('connection established') > -1)
   function call(service, txf1, msg)
   {
     var connection;
-    
+
     if(service === 'emsigner')
     {
       connection = emsignerConnection;
@@ -205,14 +265,14 @@ if(data.indexOf('connection established') > -1)
 
     console.log('Sending to ' + service + ': ');
     connection.send(msg);
-    
-    connection.onerror = function (error) 
+
+    connection.onerror = function (error)
     {
       alert('Please check the server connection: ' + error);
       document.getElementById("signData").value = error;
     };
-    
-    connection.onmessage = function (e) 
+
+    connection.onmessage = function (e)
     {
       if(e.data.indexOf("subProtocol") == -1)
       {
@@ -221,8 +281,7 @@ if(data.indexOf('connection established') > -1)
       }
     };
   }
- 
 
 </script>
-  
+</body>
 </html>
